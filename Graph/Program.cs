@@ -33,7 +33,8 @@ namespace Graph
                 Console.WriteLine("13. Найти в графе каркас минимального веса");
                 Console.WriteLine("14. Определить, существует ли путь длиной не более L между двумя заданными вершинами графа.");
                 Console.WriteLine("15. Определить множество вершин орграфа, расстояние от которых до заданной вершины не более N.");
-                Console.WriteLine("16. Выход");
+                Console.WriteLine("16. Найти все такие пары вершин, что между ними существует путь сколько угодно малой длины.");
+                Console.WriteLine("17. Выход");
                 Console.WriteLine();
                 Console.Write("Введите номер действия: ");
                 int i = int.Parse(Console.ReadLine());
@@ -166,6 +167,9 @@ namespace Graph
                         gr.Ford_Bellman(v0, N);
                         break;
                     case 16:
+                        gr.Floyd();
+                        break;
+                    case 17:
                         Console.WriteLine("Выход");
                         flag = false;
                         break;

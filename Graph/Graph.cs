@@ -545,7 +545,7 @@ namespace Graph
                         i = new_id;
                     }
                 }
-                foreach(int elem in trees.Values)
+                foreach (int elem in trees.Values)
                 {
                     if (elem != i)
                     {
@@ -574,32 +574,30 @@ namespace Graph
                 string v;
                 d[v1] = 0;
 
-                for (int i = 0; i < vertices.Count; i++)
+                while (!used[v2])
                 {
-                    if (!used[v2])
+                    v = "";
+                    foreach (string j in vertices.Keys)
                     {
-                        v = "";
-                        foreach (string j in vertices.Keys)
+                        if (!used[j] && (v == "" || d[j] < d[v]))
                         {
-                            if (!used[j] && (v == "" || d[j] < d[v]))
-                            {
-                                v = j;
-                            }
+                            v = j;
                         }
-                        if (d[v] == int.MaxValue) break;
-                        used[v] = true;
+                    }
+                    if (d[v] == int.MaxValue)
+                        break;
+                    used[v] = true;
 
-                        Dictionary<string, string> s = vertices[v];
+                    Dictionary<string, string> s = vertices[v];
 
-                        foreach (string k in s.Keys)
+                    foreach (string k in s.Keys)
+                    {
+                        if (k != v1)
                         {
-                            if (k != v1)
+                            int w = int.Parse(s[k]);
+                            if (d[v] + w < d[k])
                             {
-                                int w = int.Parse(s[k]);
-                                if (d[v] + w < d[k])
-                                {
-                                    d[k] = d[v] + w;
-                                }
+                                d[k] = d[v] + w;
                             }
                         }
                     }
@@ -607,9 +605,9 @@ namespace Graph
                 if (d[v2] != int.MaxValue)
                 {
                     if (d[v2] <= L)
-                        Console.WriteLine("Путь между {0} и {1} равен {2} - не более L", v1, v2, d[v2]);
+                        Console.WriteLine("Кратчайший путь между {0} и {1} равен {2} - не более L", v1, v2, d[v2]);
                     else
-                        Console.WriteLine("Путь между {0} и {1} равен {2} - более L", v1, v2, d[v2]);
+                        Console.WriteLine("Кратчайший путь между {0} и {1} равен {2} - более L", v1, v2, d[v2]);
                 }
                 else
                     Console.WriteLine("Не существует пути между {0} и {1}", v1, v2);
@@ -617,57 +615,119 @@ namespace Graph
         }
         public void Ford_Bellman(string v0, int N)
         {
-            Dictionary<KeyValuePair<string, string>, int> edge = new Dictionary<KeyValuePair<string, string>, int>();
-            foreach (string v1 in vertices.Keys)
+            if (!vertices.ContainsKey(v0))
+                Console.WriteLine("Вершины {0} нет в графе.", v0);
+            else
             {
-                foreach (var v2 in vertices[v1])
+                Dictionary<KeyValuePair<string, string>, int> edge = new Dictionary<KeyValuePair<string, string>, int>();
+                foreach (string v1 in vertices.Keys)
                 {
-                    edge.Add(new KeyValuePair<string, string> (v1, v2.Key), int.Parse(v2.Value));
-                }
-            }
-            Dictionary<string, Dictionary<string, int>> out_d = new Dictionary<string, Dictionary<string, int>>();
-
-            foreach (string vvv in vertices.Keys)
-            {
-                Dictionary<string, int> d = new Dictionary<string, int>();
-                foreach (string v in vertices.Keys)
-                {
-                    d.Add(v, int.MaxValue);
-                }
-                d[vvv] = 0;
-                for (int i = 0; i < vertices.Count; i++)
-                {
-                    bool exit = true;
-                    foreach (var e in edge.Keys)
+                    foreach (var v2 in vertices[v1])
                     {
-                        string a = e.Key;
-                        string b = e.Value;
-                        int w = edge[e];
-                        if (d[a] < int.MaxValue)
+                        edge.Add(new KeyValuePair<string, string>(v1, v2.Key), int.Parse(v2.Value));
+                    }
+                }
+                Dictionary<string, Dictionary<string, int>> out_d = new Dictionary<string, Dictionary<string, int>>();
+
+                foreach (string vvv in vertices.Keys)
+                {
+                    Dictionary<string, int> d = new Dictionary<string, int>();
+                    foreach (string v in vertices.Keys)
+                    {
+                        d.Add(v, int.MaxValue);
+                    }
+                    d[vvv] = 0;
+                    for (int i = 0; i < vertices.Count; i++)
+                    {
+                        bool exit = true;
+                        foreach (var e in edge.Keys)
                         {
-                            if (d[b] > d[a] + w)
+                            string a = e.Key;
+                            string b = e.Value;
+                            int w = edge[e];
+                            if (d[a] < int.MaxValue)
                             {
-                                d[b] = d[a] + w;
-                                exit = false;
+                                if (d[b] > d[a] + w)
+                                {
+                                    d[b] = d[a] + w;
+                                    exit = false;
+                                }
                             }
                         }
+                        if (exit)
+                            break;
                     }
-                    if (exit)
-                        break;
+                    out_d.Add(vvv, d);
                 }
-                out_d.Add(vvv, d);
+
+                List<string> vertices_FB = new List<string>();
+                foreach (string it in out_d.Keys)
+                {
+                    if (out_d[it][v0] <= N && it != v0 && out_d[it][v0] != int.MaxValue)
+                        vertices_FB.Add(it);
+                }
+                if (vertices_FB.Count != 0)
+                    Console.WriteLine(string.Join(" ", vertices_FB));
+                else
+                    Console.WriteLine("Таких вершин нет в орграфе");
+            }
+        }
+        public void Floyd()
+        {
+            Dictionary<string, Dictionary<string, int>> d = new Dictionary<string, Dictionary<string, int>>();
+            foreach (string v1 in vertices.Keys)
+            {
+                Dictionary<string, int> inner = new Dictionary<string, int>();
+                //inner.Add(v1, 0);
+                foreach (var v2 in vertices[v1])
+                {
+                    inner.Add(v2.Key, int.Parse(v2.Value));
+                }
+                foreach (string v2 in vertices.Keys)
+                {
+                    if (!inner.Keys.Contains(v2) && v2 != v1) 
+                        inner.Add(v2, int.MaxValue);
+                    else if (!inner.Keys.Contains(v2) && v2 == v1)
+                        inner.Add(v1, 0);
+                }
+                d.Add(v1, inner);
             }
 
-            List<string> vertices_FB = new List<string>();
-            foreach (string it in out_d.Keys)
+            foreach (string k in vertices.Keys)
             {
-                if (out_d[it][v0] <= N && it != v0)
-                    vertices_FB.Add(it);
+                foreach (string i in vertices.Keys)
+                {
+                    foreach (string j in vertices.Keys)
+                    {
+                        if (d[i][k] < int.MaxValue && d[k][j] < int.MaxValue)
+                        {
+                            d[i][j] = Math.Min(d[i][j], d[i][k] + d[k][j]);
+                        }
+                    }
+                }
             }
-            if (vertices_FB.Count != 0)
-                Console.WriteLine(string.Join(" ", vertices_FB));
+
+            bool flag = true;
+            foreach (string i in vertices.Keys)
+            {
+                foreach (string j in vertices.Keys)
+                {
+                    foreach (string t in vertices.Keys)
+                    {
+                        if (i != j && d[i][t] < int.MaxValue && d[t][t] < 0 && d[t][j] < int.MaxValue)
+                        {
+                            d[i][j] = int.MinValue;
+                            Console.Write("{0} - {1}; ", i, j);
+                            flag = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (flag)
+                Console.WriteLine("Таких пар вершин нет в графе.");
             else
-                Console.WriteLine("Таких вершин нет в орграфе");
+                Console.WriteLine();
         }
     }
 }
