@@ -12,6 +12,7 @@ namespace Graph
         Dictionary<string, Dictionary<string, string>> vertices = new Dictionary<string, Dictionary<string, string>>();
         bool oriented = false;
         bool weighted = false;
+        private List<Edge> edges = new List<Edge>();
         public bool Get_oriented
         {
             get
@@ -25,6 +26,18 @@ namespace Graph
             {
                 return weighted;
             }
+        }
+        public List<Edge> Get_edge()
+        {
+            List<Edge> edges = new List<Edge>();
+            foreach (string v1 in vertices.Keys)
+            {
+                foreach (var v2 in vertices[v1])
+                {
+                    edges.Add(new Edge(v1, v2.Key, int.Parse(v2.Value)));
+                }
+            }
+            return edges;
         }
         Dictionary<string, Dictionary<string, string>> Copy(Dictionary<string, Dictionary<string, string>> ver)
         {
@@ -290,6 +303,15 @@ namespace Graph
             else
                 Console.Write("Такой вершины нет в графе");
             Console.WriteLine();
+        }
+        private List<string> Adjacents(string v)
+        {
+            List<string> adj = new List<string>();
+            foreach (KeyValuePair<string, string> ver in vertices[v])
+            {
+                adj.Add(ver.Key);
+            }
+            return adj;
         }
         public void ex_19(string u, string v)
         {
@@ -678,14 +700,13 @@ namespace Graph
             foreach (string v1 in vertices.Keys)
             {
                 Dictionary<string, int> inner = new Dictionary<string, int>();
-                //inner.Add(v1, 0);
                 foreach (var v2 in vertices[v1])
                 {
                     inner.Add(v2.Key, int.Parse(v2.Value));
                 }
                 foreach (string v2 in vertices.Keys)
                 {
-                    if (!inner.Keys.Contains(v2) && v2 != v1) 
+                    if (!inner.Keys.Contains(v2) && v2 != v1)
                         inner.Add(v2, int.MaxValue);
                     else if (!inner.Keys.Contains(v2) && v2 == v1)
                         inner.Add(v1, 0);
@@ -728,6 +749,130 @@ namespace Graph
                 Console.WriteLine("Таких пар вершин нет в графе.");
             else
                 Console.WriteLine();
+        }
+        public int Ford_Fulkerson(string v, string sink, int cmin, Dictionary<string, bool> visited, Dictionary<string, List<string>> full_adj_list)
+        {
+            if (v == sink)
+                return cmin;
+
+            visited[v] = true;
+            foreach (string u in full_adj_list[v])
+            {
+                bool backwards = false;
+                Edge edge = edges.Single(x => (x.V == v && x.U == u) || (x.U == v && x.V == u));
+                if (u == edge.V)
+                    backwards = true;
+                if (!visited[u] && edge.Flow < edge.W && (backwards == false || backwards == true && edge.Flow > 0))
+                {
+                    int delta = Ford_Fulkerson(u, sink, cmin < edge.W - edge.Flow ? cmin : edge.W - edge.Flow, new Dictionary<string, bool>(visited), full_adj_list);
+                    if (delta > 0)
+                    {
+                        if (!backwards)
+                            edge.Flow += delta;
+                        else
+                            edge.Flow -= delta;
+                        return delta;
+                    }
+                }
+                else if (!visited[u] && backwards == true && edge.Flow > 0 && edge.Flow == edge.W)
+                {
+                    int delta = Ford_Fulkerson(u, sink, cmin < edge.Flow ? cmin : edge.Flow, new Dictionary<string, bool>(visited), full_adj_list);
+                    if (delta > 0)
+                    {
+                        edge.Flow -= delta;
+                        return delta;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        private string General_Source(List<string> list_sources)
+        {
+            AddVertex("s");
+            foreach (string v in list_sources)
+            {
+                int a = edges.Where(x => x.V == v).Sum(x => x.W);
+                AddEdge("s", v, a.ToString());
+                edges.Add(new Edge("s", v, a));
+            }
+            return "s";
+        }
+
+        private string General_Sink(List<string> list_sinks)
+        {
+            AddVertex("t");
+            foreach (string v in list_sinks)
+            {
+                int a = edges.Where(x => x.U == v).Sum(x => x.W);
+                AddEdge(v, "t", a.ToString());
+                edges.Add(new Edge(v, "t", a));
+            }
+            return "t";
+        }
+
+        public int Max_flow()
+        {
+            edges = new List<Edge>(Get_edge());
+            List<string> list_sinks = new List<string>();
+            HashSet<string> set_sources = new HashSet<string>(vertices.Keys);
+
+            foreach (string v in vertices.Keys)
+            {
+                HashSet<string> adj = new HashSet<string>(Adjacents(v));
+                if (adj.Count == 0)
+                    list_sinks.Add(v);
+                set_sources.ExceptWith(adj);
+            }
+
+            List<string> list_sources = set_sources.ToList();
+
+            string sink = "";
+            string source = "";
+
+            if (list_sinks.Count == 0 || list_sources.Count == 0)
+                return -1;
+            if (list_sinks.Count == 1)
+                sink = list_sinks[0];
+            else
+                sink = General_Sink(list_sinks);
+            if (list_sources.Count == 1)
+                source = list_sources[0];
+            else
+                source = General_Source(list_sources);
+
+            Dictionary<string, bool> visited = new Dictionary<string, bool>();
+            foreach (string v in vertices.Keys)
+            {
+                visited.Add(v, false);
+            }
+            Dictionary<string, List<string>> full_adj_list = new Dictionary<string, List<string>>();
+            foreach (string v in vertices.Keys)
+            {
+                full_adj_list.Add(v, Adjacents(v));
+            }
+            foreach (string v in vertices.Keys)
+            {
+                if (v != source && v != sink)
+                    foreach (string v_ in vertices.Keys)
+                    {
+                        if (v != v_ && Adjacents(v_).IndexOf(v) != -1 && v_ != sink)
+                            full_adj_list[v].Add(v_);
+                    }
+            }
+
+            int max_flow = 0;
+            int local_flow = Ford_Fulkerson(source, sink, int.MaxValue, new Dictionary<string, bool>(visited), full_adj_list);
+            while (local_flow != 0)
+            {
+                max_flow += local_flow;
+                local_flow = Ford_Fulkerson(source, sink, int.MaxValue, new Dictionary<string, bool>(visited), full_adj_list);
+            }
+
+            foreach (Edge e in edges)
+                e.Flow = 0;
+
+            return max_flow;
         }
     }
 }

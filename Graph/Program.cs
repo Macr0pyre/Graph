@@ -34,7 +34,8 @@ namespace Graph
                 Console.WriteLine("14. Определить, существует ли путь длиной не более L между двумя заданными вершинами графа.");
                 Console.WriteLine("15. Определить множество вершин орграфа, расстояние от которых до заданной вершины не более N.");
                 Console.WriteLine("16. Найти все такие пары вершин, что между ними существует путь сколько угодно малой длины.");
-                Console.WriteLine("17. Выход");
+                Console.WriteLine("17. Найти максимальный поток в графе.");
+                Console.WriteLine("18. Выход");
                 Console.WriteLine();
                 Console.Write("Введите номер действия: ");
                 int i = int.Parse(Console.ReadLine());
@@ -170,6 +171,11 @@ namespace Graph
                         gr.Floyd();
                         break;
                     case 17:
+                        Console.Write("Максимальный поток в графе: ");
+                        Console.Write(gr.Max_flow());
+                        Console.WriteLine();
+                        break;
+                    case 18:
                         Console.WriteLine("Выход");
                         flag = false;
                         break;
